@@ -1,0 +1,38 @@
+[
+  {
+    "title": "v0.1.0 Initial public release",
+    "description": "Go service with the provider interface and its fake, OpenTofu infrastructure, CI without apply, security tooling, documentation. No open issue: everything is in the initial commit."
+  },
+  {
+    "title": "v0.2.0 Go upgrade and tooling baseline",
+    "description": "Keep the Go toolchain, the pinned dev tools and the CI actions current, and prove the CI on real runners (Linux, macOS, Windows)."
+  },
+  {
+    "title": "v0.3.0 Testability and offline demo",
+    "description": "A contract test shared by every provider, and a demo that stays offline and deterministic."
+  },
+  {
+    "title": "v0.4.0 API hardening",
+    "description": "Pagination, a short cache in front of the Cloud Run Admin API, request correlation in the logs, and an OpenAPI description checked by tests."
+  },
+  {
+    "title": "v0.5.0 Container hardening",
+    "description": "Signed image with SBOM and provenance, and a reviewed policy for scan exceptions."
+  },
+  {
+    "title": "v0.6.0 OpenTofu infrastructure",
+    "description": "A written deployment runbook and the identity model for the manual deployment, with the plan check before every apply."
+  },
+  {
+    "title": "v0.7.0 CI/CD without apply",
+    "description": "Decide and, if accepted, add a read-only drift check in CI, without ever applying from a pipeline."
+  },
+  {
+    "title": "v0.8.0 Docs and registry link",
+    "description": "Project page on paulperigault.fr, registry entry and README validated by the owner."
+  },
+  {
+    "title": "v1.0.0 Stable API",
+    "description": "Freeze the /api/v1 contract with a schema, a compatibility test and a deprecation policy."
+  }
+]

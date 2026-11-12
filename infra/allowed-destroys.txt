@@ -1,0 +1,7 @@
+# Resource addresses a plan may destroy. One per line; empty lines and lines
+# starting with # are ignored. `task infra:plan:check` fails when a plan
+# destroys (or replaces) anything that is not listed here.
+#
+# The list is empty on purpose: the service is protected by
+# deletion_protection and nothing in this configuration is meant to be
+# destroyed. Add an address in the same pull request as the change that needs it.

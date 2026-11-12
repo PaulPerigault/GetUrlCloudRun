@@ -1,0 +1,7 @@
+[
+  {"name": "billing-api", "url": "https://billing-api-demo-ew.a.run.app"},
+  {"name": "catalog", "url": "https://catalog-demo-ew.a.run.app"},
+  {"name": "hello", "url": "https://hello-demo-ew.a.run.app"},
+  {"name": "orders-worker", "url": "https://orders-worker-demo-ew.a.run.app"},
+  {"name": "web-frontend", "url": "https://web-frontend-demo-ew.a.run.app"}
+]

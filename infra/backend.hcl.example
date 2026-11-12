@@ -1,0 +1,5 @@
+# Copy to backend.hcl (ignored by Git) and run:
+#   tofu init -backend-config=backend.hcl
+# The bucket lives outside this repository. Enable object versioning on it.
+bucket = "REPLACE-WITH-YOUR-STATE-BUCKET"
+prefix = "geturlcloudrun"

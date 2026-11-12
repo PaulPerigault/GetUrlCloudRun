@@ -1,0 +1,253 @@
+# https://taskfile.dev — single entry point. `task` lists the targets.
+# Dev tools are pinned in tools/go.mod (hashes in tools/go.sum): nothing is
+# downloaded unverified. Install Task once: `go install github.com/go-task/task/v3/cmd/task@latest`
+# or use the pinned copy: `go tool -modfile=tools/go.mod task <target>`.
+# OpenTofu is pinned in infra/.opentofu-version with SHA-256 digests in
+# infra/opentofu.sha256 and installed by `task infra:tool`.
+# No target applies, plans or destroys anything: infrastructure changes are
+# made by the owner, by hand (see infra/README.md).
+version: '3'
+
+vars:
+  BINARY: geturlcloudrun
+  PKG: github.com/PaulPerigault/GetUrlCloudRun
+  EXE: '{{if eq OS "windows"}}.exe{{end}}'
+  TOOL: go tool -modfile=tools/go.mod
+  TOFU: .tools/bin/tofu{{.EXE}}
+  TRIVY_IMAGE: aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
+  VERSION:
+    sh: git describe --tags --always --dirty 2>/dev/null || echo dev
+  COMMIT:
+    sh: git rev-parse --short HEAD 2>/dev/null || echo none
+  DATE: '{{dateInZone "2006-01-02T15:04:05Z" now "UTC"}}'
+  LDFLAGS: >-
+    -s -w
+    -X {{.PKG}}/internal/version.Version={{.VERSION}}
+    -X {{.PKG}}/internal/version.Commit={{.COMMIT}}
+    -X {{.PKG}}/internal/version.Date={{.DATE}}
+  PLATFORMS: linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64
+
+dotenv: ['.env']
+
+tasks:
+  default:
+    desc: List the targets
+    silent: true
+    cmds:
+      - task --list || go tool -modfile=tools/go.mod task --list
+
+  setup:
+    desc: Download modules, create .env, verify pinned tools, install Git hooks (Lefthook)
+    cmds:
+      - go mod download
+      - go mod verify
+      - go -C tools mod download
+      - go -C tools mod verify
+      - test -f .env || cp .env.example .env
+      - go build -modfile=tools/go.mod -o .tools/bin/lefthook{{.EXE}} github.com/evilmartians/lefthook
+      - '{{.TOOL}} lefthook install'
+      - task: hooks:pin
+
+  hooks:pin:
+    desc: Make the Git hooks run the pinned Lefthook (tools/go.sum), not whatever is in PATH
+    cmds:
+      - |
+        for h in "$(git rev-parse --git-path hooks)"/*; do
+          grep -q 'call_lefthook run' "$h" 2>/dev/null || continue
+          grep -q 'LEFTHOOK_BIN=' "$h" && continue
+          sed -i 's|^call_lefthook run|LEFTHOOK_BIN="$(git rev-parse --show-toplevel)/.tools/bin/lefthook{{.EXE}}"; export LEFTHOOK_BIN\ncall_lefthook run|' "$h"
+        done
+
+  dev:
+    desc: Run the server locally with the fake provider (no GCP account), on http://localhost:8080
+    env:
+      PROVIDER: fake
+    cmds:
+      - go run ./cmd/{{.BINARY}} serve
+
+  run:
+    desc: 'Run the binary, e.g. task run -- version'
+    deps: [build]
+    cmds:
+      - ./bin/{{.BINARY}}{{.EXE}} {{.CLI_ARGS}}
+
+  verify:
+    desc: Everything CI runs, locally (pre-push hook and CI job)
+    cmds:
+      - task: fmt:check
+      - task: lint
+      - task: lint:actions
+      - task: test
+      - task: check:docs
+      - task: skills:verify
+      - task: infra:fmt
+      - task: infra:lint
+      - task: infra:validate
+      - task: infra:test
+      - task: security
+
+  skills:verify:
+    desc: Project skills match .claude/skills.lock.json; at most 12 auto-triggered
+    cmds:
+      - go run ./dev/skillscheck
+
+  test:
+    desc: Unit and integration tests with the race detector; internal/ packages must reach 85 percent
+    cmds:
+      - mkdir -p .tools
+      - go test -race -count=1 -coverprofile=.tools/cover.out ./...
+      - go run ./dev/covercheck -profile .tools/cover.out -prefix internal/ -min 85
+
+  lint:
+    desc: go vet and golangci-lint (depguard, funlen, gocyclo...)
+    cmds:
+      - go vet ./...
+      - '{{.TOOL}} golangci-lint run ./...'
+
+  lint:actions:
+    desc: actionlint (pinned in tools/actionlint.mod) on .github/workflows
+    cmds:
+      - go tool -modfile=tools/actionlint.mod actionlint
+
+  lint:zizmor:
+    desc: "zizmor 1.32.0 (same version as CI) offline, regular persona, via Docker pinned by digest; not part of verify (needs Docker)"
+    cmds:
+      - docker run --rm -v "{{.ROOT_DIR}}:/w:ro" -w /w ghcr.io/zizmorcore/zizmor@sha256:3014cc8f68f663935f69b3c3e0e41f5ce102b268d97db13db0f62208747f860d --offline --no-progress .github/workflows
+
+  fmt:
+    desc: Format the Go code and the OpenTofu files
+    cmds:
+      - gofmt -s -w .
+      - task: infra:fmt:write
+
+  fmt:check:
+    desc: Fail if a Go file is not formatted
+    cmds:
+      - cmd: test -z "$(gofmt -s -l .)" || { gofmt -s -l .; echo "run task fmt"; exit 1; }
+
+  build:
+    desc: Build bin/geturlcloudrun (pure Go, CGO off)
+    env:
+      CGO_ENABLED: '0'
+    cmds:
+      - go build -trimpath -ldflags "{{.LDFLAGS}}" -o bin/{{.BINARY}}{{.EXE}} ./cmd/{{.BINARY}}
+
+  build:all:
+    desc: Cross-compile five platforms into dist/ with SHA256SUMS
+    env:
+      CGO_ENABLED: '0'
+    cmds:
+      - for: {var: PLATFORMS, split: ' '}
+        cmd: >-
+          GOOS={{index (splitList "/" .ITEM) 0}} GOARCH={{index (splitList "/" .ITEM) 1}}
+          go build -trimpath -ldflags "{{.LDFLAGS}}"
+          -o dist/{{.BINARY}}-{{index (splitList "/" .ITEM) 0}}-{{index (splitList "/" .ITEM) 1}}{{if eq (index (splitList "/" .ITEM) 0) "windows"}}.exe{{end}}
+          ./cmd/{{.BINARY}}
+      - cmd: cd dist && sha256sum {{.BINARY}}-* > SHA256SUMS
+        platforms: [linux, darwin, windows]
+
+  demo:
+    desc: Offline demo, the real binary with the fake provider, every route called and checked
+    deps: [build]
+    cmds:
+      - go run ./dev/demo -bin bin/{{.BINARY}}{{.EXE}}
+
+  demo:docker:
+    desc: Offline demo of the container (internal network, read-only, no capability); fails unless it becomes healthy
+    cmds:
+      - docker compose up --build --wait
+      - defer: docker compose down --remove-orphans
+
+  security:
+    desc: govulncheck on code and dependencies, gitleaks on the tree and the Git history
+    cmds:
+      - '{{.TOOL}} govulncheck ./...'
+      - '{{.TOOL}} gitleaks dir . --redact --no-banner'
+      - '{{.TOOL}} gitleaks git . --redact --no-banner'
+
+  check:docs:
+    desc: Fail if the docs mention a task, command or path that no longer exists, if README Context is missing, or if the README output drifted
+    cmds:
+      - go run ./dev/checkdocs
+      - go run ./dev/readme-gen -check
+
+  docs:readme:
+    desc: Regenerate the sample API output of README.md from the real handler (fake provider)
+    cmds:
+      - go run ./dev/readme-gen
+
+  docker:build:
+    desc: Build the container image (distroless, non-root 65532)
+    cmds:
+      - >-
+        docker build -t {{.BINARY}}:{{.VERSION}} -t {{.BINARY}}:local
+        --build-arg VERSION={{.VERSION}} --build-arg COMMIT={{.COMMIT}} --build-arg DATE={{.DATE}} .
+
+  docker:scan:
+    desc: Scan the image with Trivy (HIGH and CRITICAL fail), pinned scanner image
+    deps: [docker:build]
+    cmds:
+      - mkdir -p .tools
+      - docker save {{.BINARY}}:local -o .tools/image.tar
+      - >-
+        docker run --rm -v "{{.TASKFILE_DIR}}/.tools:/in" {{.TRIVY_IMAGE}}
+        image --input /in/image.tar --severity HIGH,CRITICAL --exit-code 1
+
+  infra:tool:
+    desc: Install the pinned OpenTofu into .tools/bin (SHA-256 verified) and fail unless it is exactly the pinned version
+    cmds:
+      - go run ./dev/toolfetch ensure
+
+  infra:init:
+    desc: tofu init -backend=false (downloads the pinned provider, never touches the state, no credential)
+    deps: [infra:tool]
+    cmds:
+      - '{{.TOFU}} -chdir=infra init -backend=false -input=false'
+
+  infra:fmt:
+    desc: Fail if an OpenTofu file is not formatted
+    deps: [infra:tool]
+    cmds:
+      - '{{.TOFU}} -chdir=infra fmt -check -recursive -diff'
+
+  infra:fmt:write:
+    desc: Format the OpenTofu files
+    deps: [infra:tool]
+    cmds:
+      - '{{.TOFU}} -chdir=infra fmt -recursive'
+
+  infra:validate:
+    desc: tofu validate on the configuration (no credential)
+    deps: [infra:init]
+    cmds:
+      - '{{.TOFU}} -chdir=infra validate'
+
+  infra:test:
+    desc: tofu test with the mocked Google provider (no credential, no network)
+    deps: [infra:init]
+    cmds:
+      - '{{.TOFU}} -chdir=infra test'
+
+  infra:lint:
+    desc: tflint with the bundled ruleset (pinned in tools/go.mod)
+    cmds:
+      - '{{.TOOL}} tflint --chdir=infra'
+
+  infra:scan:
+    desc: Trivy misconfiguration scan of infra/ (HIGH and CRITICAL fail), pinned scanner image
+    cmds:
+      - >-
+        docker run --rm -v "{{.TASKFILE_DIR}}/infra:/work:ro" {{.TRIVY_IMAGE}}
+        config --severity HIGH,CRITICAL --exit-code 1 /work
+
+  infra:plan:check:
+    desc: 'Refuse a plan that destroys something not in infra/allowed-destroys.txt: task infra:plan:check PLAN=infra/plan.json (the owner produces the plan by hand)'
+    requires:
+      vars: [PLAN]
+    cmds:
+      - go run ./dev/plancheck {{.PLAN}}
+
+  clean:
+    desc: Remove build output and generated reports
+    cmds:
+      - rm -rf bin dist .tools coverage.* infra/.terraform

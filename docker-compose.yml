@@ -1,0 +1,27 @@
+# Offline demo of the container with the fake provider: no GCP account and no
+# external network (the network is internal, nothing is published to the host).
+#   docker compose up --build --wait     fails unless the container becomes healthy
+#   docker compose down
+# The healthcheck is the binary itself (`healthcheck`): the image has no shell.
+name: geturlcloudrun
+
+services:
+  api:
+    build: .
+    image: geturlcloudrun:local
+    environment:
+      PROVIDER: fake
+      PORT: "8080"
+    healthcheck:
+      test: ["CMD", "/geturlcloudrun", "healthcheck"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    networks: [internal]
+
+networks:
+  internal:
+    internal: true

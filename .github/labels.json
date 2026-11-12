@@ -1,0 +1,142 @@
+[
+  {
+    "name": "type:fonction",
+    "color": "1f3a5f",
+    "description": "New capability of a package or of the documentation"
+  },
+  {
+    "name": "type:bogue",
+    "color": "1f3a5f",
+    "description": "Observed behaviour differs from the expected one"
+  },
+  {
+    "name": "type:tache",
+    "color": "1f3a5f",
+    "description": "Bounded piece of work: allowed files and an acceptance command"
+  },
+  {
+    "name": "type:decision",
+    "color": "1f3a5f",
+    "description": "Choice to settle or to record (ADR, decisions-log)"
+  },
+  {
+    "name": "type:doc",
+    "color": "1f3a5f",
+    "description": "Writing or fixing documentation"
+  },
+  {
+    "name": "type:accessibilite",
+    "color": "1f3a5f",
+    "description": "Accessibility defect or improvement (WCAG, screen readers)"
+  },
+  {
+    "name": "type:chantier",
+    "color": "1f3a5f",
+    "description": "Parent issue: lists its sub-issues as checkboxes"
+  },
+  {
+    "name": "pkg:api",
+    "color": "3d4f63",
+    "description": "internal/api: routes and handlers"
+  },
+  {
+    "name": "pkg:app",
+    "color": "3d4f63",
+    "description": "internal/app: wiring, server lifecycle, CLI"
+  },
+  {
+    "name": "pkg:config",
+    "color": "3d4f63",
+    "description": "internal/config: environment variables"
+  },
+  {
+    "name": "pkg:provider",
+    "color": "3d4f63",
+    "description": "internal/provider and its fake and gcp implementations"
+  },
+  {
+    "name": "pkg:httpmw",
+    "color": "3d4f63",
+    "description": "internal/httpmw: CORS, rate limit, access log, deadline"
+  },
+  {
+    "name": "pkg:infra",
+    "color": "3d4f63",
+    "description": "infra/: OpenTofu configuration and its tests"
+  },
+  {
+    "name": "pkg:image",
+    "color": "3d4f63",
+    "description": "Dockerfile, docker-compose.yml, image scan"
+  },
+  {
+    "name": "pkg:docs",
+    "color": "3d4f63",
+    "description": "README, ADR, journal, project page"
+  },
+  {
+    "name": "pkg:ci",
+    "color": "3d4f63",
+    "description": "Workflows, hooks, Taskfile, dev programs"
+  },
+  {
+    "name": "pkg:processus",
+    "color": "3d4f63",
+    "description": "Process: labels, templates, release"
+  },
+  {
+    "name": "prio:bloquant",
+    "color": "b42318",
+    "description": "Blocks the milestone"
+  },
+  {
+    "name": "prio:haute",
+    "color": "b42318",
+    "description": "Next in line"
+  },
+  {
+    "name": "prio:normale",
+    "color": "b42318",
+    "description": "Planned in the milestone"
+  },
+  {
+    "name": "prio:basse",
+    "color": "b42318",
+    "description": "When time allows"
+  },
+  {
+    "name": "taille:trait",
+    "color": "2f5d50",
+    "description": "30 minutes at most"
+  },
+  {
+    "name": "taille:page",
+    "color": "2f5d50",
+    "description": "One working session"
+  },
+  {
+    "name": "taille:cahier",
+    "color": "2f5d50",
+    "description": "Too big: split it"
+  },
+  {
+    "name": "etat:a-valider",
+    "color": "6b5b3e",
+    "description": "Waiting for the owner to validate"
+  },
+  {
+    "name": "etat:bloque",
+    "color": "6b5b3e",
+    "description": "Blocked by an outside action"
+  },
+  {
+    "name": "dependencies",
+    "color": "0e8a16",
+    "description": "Dependabot update"
+  },
+  {
+    "name": "owner",
+    "color": "5319e7",
+    "description": "Action reserved to the repository owner"
+  }
+]

@@ -1,0 +1,184 @@
+# golangci-lint v2 — https://golangci-lint.run/usage/configuration/
+# Limits mirror AGENTS.md: function <= 40 lines, gocyclo <= 15, <= 4 parameters,
+# nesting <= 3, and the package dependency direction (depguard).
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gosec
+    - revive
+    - gocyclo
+    - funlen
+    - depguard
+    - misspell
+    - unconvert
+    - bodyclose
+    - errorlint
+    - nilerr
+    - predeclared
+    - usestdlibvars
+  settings:
+    gocyclo:
+      min-complexity: 15
+    funlen:
+      lines: 40
+      statements: -1
+    errcheck:
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+    revive:
+      rules:
+        - name: exported
+        - name: package-comments
+        - name: error-return
+        - name: error-naming
+        - name: var-naming
+        - name: indent-error-flow
+        - name: unused-parameter
+        - name: argument-limit
+          arguments: [4]
+        - name: max-control-nesting
+          arguments: [3]
+    gosec:
+      excludes:
+        - G115 # integer conversions are bounded by the surrounding checks
+    depguard:
+      rules:
+        # Dependency direction, see the table in AGENTS.md. Tests are not restricted.
+        stdlib-only-http:
+          list-mode: lax
+          files: ["!**/*_test.go"]
+          deny:
+            - pkg: github.com/gin-gonic/gin
+              desc: net/http from the standard library is enough (ADR 0001)
+            - pkg: github.com/gin-contrib/cors
+              desc: CORS is httpmw.CORS, with an explicit allow-list
+        provider:
+          list-mode: lax
+          files: ["**/internal/provider/*.go", "!**/internal/provider/*_test.go"]
+          deny:
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal
+              desc: provider is a leaf package (the contract)
+            - pkg: net/http
+              desc: the contract knows nothing about HTTP
+            - pkg: cloud.google.com
+              desc: only provider/gcp talks to Google
+        fake:
+          list-mode: lax
+          files: ["**/internal/provider/fake/**", "!**/*_test.go"]
+          deny:
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/api
+              desc: fake only implements provider
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/httpmw
+              desc: fake only implements provider
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/config
+              desc: fake only implements provider
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/app
+              desc: fake only implements provider
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/provider/gcp
+              desc: the implementations are independent bricks
+            - pkg: cloud.google.com
+              desc: the fake needs no Google library
+            - pkg: net/http
+              desc: the fake needs no network
+        gcp:
+          list-mode: lax
+          files: ["**/internal/provider/gcp/**", "!**/*_test.go"]
+          deny:
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/api
+              desc: gcp only implements provider
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/httpmw
+              desc: gcp only implements provider
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/config
+              desc: gcp receives its settings as arguments
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/app
+              desc: gcp only implements provider
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/provider/fake
+              desc: the implementations are independent bricks
+            - pkg: net/http
+              desc: the Cloud Run client owns its transport
+        config:
+          list-mode: lax
+          files: ["**/internal/config/**", "!**/*_test.go"]
+          deny:
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal
+              desc: config is a leaf package
+            - pkg: net/http
+              desc: config reads the environment only
+            - pkg: cloud.google.com
+              desc: config reads the environment only
+        api:
+          list-mode: lax
+          files: ["**/internal/api/**", "!**/*_test.go"]
+          deny:
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/provider/gcp
+              desc: api talks to the provider interface, never to an implementation
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/provider/fake
+              desc: api talks to the provider interface, never to an implementation
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/config
+              desc: api receives what it needs as arguments
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/app
+              desc: app depends on api, not the reverse
+            - pkg: cloud.google.com
+              desc: only provider/gcp talks to Google
+            - pkg: google.golang.org
+              desc: only provider/gcp talks to Google
+        httpmw:
+          list-mode: lax
+          files: ["**/internal/httpmw/**", "!**/*_test.go"]
+          deny:
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal
+              desc: httpmw depends on the standard library only
+            - pkg: cloud.google.com
+              desc: httpmw depends on the standard library only
+            - pkg: google.golang.org
+              desc: httpmw depends on the standard library only
+        app:
+          list-mode: lax
+          files: ["**/internal/app/**", "!**/*_test.go"]
+          deny:
+            - pkg: cloud.google.com
+              desc: only provider/gcp talks to Google
+            - pkg: google.golang.org
+              desc: only provider/gcp talks to Google
+        cmd:
+          list-mode: lax
+          files: ["**/cmd/**"]
+          deny:
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/api
+              desc: cmd only calls internal/app
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/config
+              desc: cmd only calls internal/app
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/httpmw
+              desc: cmd only calls internal/app
+            - pkg: github.com/PaulPerigault/GetUrlCloudRun/internal/provider
+              desc: cmd only calls internal/app
+  exclusions:
+    paths:
+      - testdata
+    rules:
+      - path: _test\.go
+        linters: [gosec, gocyclo, funlen, revive]
+      - path: dev/
+        linters: [gosec, funlen]
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/PaulPerigault/GetUrlCloudRun

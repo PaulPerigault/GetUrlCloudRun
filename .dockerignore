@@ -1,0 +1,15 @@
+.git
+.github
+.claude
+.env
+.env.*
+.tools
+bin
+dist
+infra
+dev
+tools
+docs
+skills
+*.md
+!README.md
