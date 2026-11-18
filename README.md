@@ -168,10 +168,9 @@ See the [milestones](https://github.com/PaulPerigault/GetUrlCloudRun/milestones)
 - No cache: each list is one call to the Cloud Run Admin API, and the API has its own quotas.
 - Behaviour against the real Cloud Run Admin API is covered by an in-process gRPC server that speaks the same protocol, not by a call to Google. The first real run is the owner's.
 - The infrastructure code is validated and tested with a mocked provider. It has not been planned or applied against a real project.
-- CodeQL and OpenSSF Scorecard run only once the repository is public (they need GitHub Advanced Security, free on public repositories). While it is private, the coverage is gitleaks, govulncheck, Trivy and zizmor, and the required `ci` check treats the skipped jobs as passed.
+- CodeQL and OpenSSF Scorecard need GitHub Advanced Security, which is free on public repositories. The required `ci` check treats a skipped job as passed.
 - The deployed service is private by default: callers need an identity token with the invoker role.
-- The GCP provider has never been exercised against a real cloud, neither Google Cloud nor Cloud Run: only the fake provider and the in-process gRPC server have run.
-- Provenance: written in a company setting in 2024. No forbidden name is configured for the publication check, because none was supplied (provenance entreprise 2024, aucun nom interdit configuré).
+- Provenance: written in a company setting in 2024. The Git date of the single commit is the date of the clean-up, not of the work (see Context).
 
 ## Author
 

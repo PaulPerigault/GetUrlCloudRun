@@ -8,9 +8,8 @@ Thanks for looking. This is a small project with a strict method; the rules are 
 ```bash
 git clone https://github.com/PaulPerigault/GetUrlCloudRun.git
 cd GetUrlCloudRun
-go install github.com/go-task/task/v3/cmd/task@latest   # or: go tool -modfile=tools/go.mod task
-task setup     # modules, .env, pinned tools check, Git hooks (Lefthook)
-task verify    # everything CI runs
+go tool -modfile=tools/go.mod task setup    # pinned Task, no global install; modules, .env, pinned tools check, Git hooks (Lefthook)
+go tool -modfile=tools/go.mod task verify   # everything CI runs
 ```
 
 Go 1.27 or newer (the toolchain is pinned in `go.mod`). Docker is needed for `task docker:scan` and
