@@ -18,7 +18,7 @@ Repository description (one technical sentence, under the 350 characters GitHub 
 > Read-only Go API that returns the URLs of Cloud Run services, with a deterministic fake provider for offline use and a tested OpenTofu deployment.
 
 Topics: `go`, `golang`, `cloud-run`, `google-cloud`, `gcp`, `opentofu`, `infrastructure-as-code`, `rest-api`,
-`distroless`, `devsecops`.
+`distroless`.
 
 Patterns to check on the clean repository, working tree and history, before it becomes public. Regular
 expressions are written so that this file does not match itself. Counters only, never the matched value.
