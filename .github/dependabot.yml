@@ -16,6 +16,9 @@ updates:
     cooldown: {default-days: 7}
     commit-message: {prefix: 'chore(deps-dev)'}
     labels: [dependencies]
+    ignore:
+      # rardecode 2.2.0 breaks the build of the pinned gitleaks (mholt/archives v0.1.2); revisit when gitleaks moves
+      - dependency-name: github.com/nwaples/rardecode/v2
     groups:
       dev-tools:
         patterns: ['*']
